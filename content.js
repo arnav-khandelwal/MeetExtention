@@ -1,9 +1,7 @@
-// Content script for Google Meet
 console.log('Meet Extension content script loaded');
 
 let captionElement = null;
 
-// Listen for messages from the popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
   console.log('Content script received message:', request);
   
@@ -25,42 +23,50 @@ function showCaptions() {
   captionElement.id = 'meet-extension-caption';
   captionElement.textContent = 'hi this is a sample text';
   
-  // Style the caption
+  // Style the caption with VERY simple fixed positioning
   captionElement.style.cssText = `
-    position: fixed;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 10px 20px;
-    border-radius: 8px;
-    font-family: 'Google Sans', Roboto, Arial, sans-serif;
-    font-size: 16px;
-    font-weight: 500;
-    z-index: 10000;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
-    backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    max-width: 80%;
-    text-align: center;
-    animation: fadeIn 0.3s ease-in-out;
+    position: fixed !important;
+    bottom: 100px !important;
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    background: red !important;
+    color: white !important;
+    padding: 20px 30px !important;
+    border-radius: 8px !important;
+    font-family: Arial, sans-serif !important;
+    font-size: 24px !important;
+    font-weight: bold !important;
+    z-index: 999999 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8) !important;
+    border: 5px solid yellow !important;
+    text-align: center !important;
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: none !important;
+    width: 300px !important;
+    height: 60px !important;
+    line-height: 60px !important;
   `;
-  
-  // Add fade-in animation
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
-      to { opacity: 1; transform: translateX(-50%) translateY(0); }
-    }
-  `;
-  document.head.appendChild(style);
   
   // Add to the page
   document.body.appendChild(captionElement);
   
+  // Log element details for debugging
   console.log('Captions shown');
+  console.log('Caption element:', captionElement);
+  console.log('Element position:', captionElement.getBoundingClientRect());
+  console.log('Window height:', window.innerHeight);
+  console.log('Window width:', window.innerWidth);
+  
+  // Force visibility check
+  setTimeout(() => {
+    const rect = captionElement.getBoundingClientRect();
+    console.log('Caption final position after timeout:', rect);
+    if (rect.top < 0 || rect.bottom > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
+      console.warn('Caption might be positioned outside viewport!');
+    }
+  }, 200);
 }
 
 function hideCaptions() {
@@ -75,26 +81,58 @@ function hideCaptions() {
 function adjustCaptionPosition() {
   if (!captionElement) return;
   
+  console.log('adjustCaptionPosition called but disabled for debugging');
+  // Temporarily disabled to test basic positioning
+  return;
+  
+  console.log('Adjusting caption position...');
+  
   // Try to find the meeting controls bar
   const controlsSelectors = [
     '[data-meeting-controls]',
     '[role="toolbar"]',
     '.VfPpkd-Bz112c-LgbsSe',
-    '[jsname="A5il2e"]'
+    '[jsname="A5il2e"]',
+    '[aria-label*="meeting controls"]',
+    '.crqnQb' // Another common Meet controls selector
   ];
   
   let controlsBar = null;
   for (const selector of controlsSelectors) {
     controlsBar = document.querySelector(selector);
-    if (controlsBar) break;
+    if (controlsBar) {
+      console.log('Found controls with selector:', selector);
+      break;
+    }
   }
   
   if (controlsBar) {
     const rect = controlsBar.getBoundingClientRect();
-    const newBottom = window.innerHeight - rect.top + 20; // 20px above controls
+    console.log('Controls position:', rect);
+    
+    // Position above controls with some padding
+    const newBottom = window.innerHeight - rect.top + 30; // 30px above controls
+    captionElement.style.position = 'fixed';
     captionElement.style.bottom = newBottom + 'px';
-    console.log('Caption position adjusted based on controls');
+    captionElement.style.left = '50%';
+    captionElement.style.transform = 'translateX(-50%)';
+    captionElement.style.top = 'auto'; // Clear any top positioning
+    
+    console.log('Caption positioned at bottom:', newBottom + 'px');
+  } else {
+    // Fallback positioning - center of screen
+    console.log('Controls not found, using center positioning');
+    captionElement.style.position = 'fixed';
+    captionElement.style.bottom = '150px';
+    captionElement.style.left = '50%';
+    captionElement.style.transform = 'translateX(-50%)';
+    captionElement.style.top = 'auto';
   }
+  
+  // Make sure it's still styled properly
+  captionElement.style.background = 'rgba(0, 0, 0, 0.8)';
+  captionElement.style.border = '2px solid #4285f4'; // Blue border for visibility
+  console.log('Caption position adjusted');
 }
 
 // Observe DOM changes to adjust position when controls move
