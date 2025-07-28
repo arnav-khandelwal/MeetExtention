@@ -1,131 +1,114 @@
 // Content script for Google Meet
 console.log('Meet Extension content script loaded');
 
-// Listen for messages from popup
+let captionElement = null;
+
+// Listen for messages from the popup
 chrome.runtime.onMessage.addListener(function(request, sender, sendResponse) {
-  console.log('Received message:', request);
+  console.log('Content script received message:', request);
   
-  switch(request.action) {
-    case 'toggleMute':
-      toggleMute();
-      sendResponse({success: true, message: 'Mute toggled'});
-      break;
-      
-    case 'toggleVideo':
-      toggleVideo();
-      sendResponse({success: true, message: 'Video toggled'});
-      break;
-      
-    case 'showInfo':
-      showMeetingInfo();
-      sendResponse({success: true, message: 'Meeting info displayed'});
-      break;
-      
-    default:
-      sendResponse({success: false, message: 'Unknown command'});
+  if (request.action === 'showCaptions') {
+    showCaptions();
+    sendResponse({success: true});
+  } else if (request.action === 'hideCaptions') {
+    hideCaptions();
+    sendResponse({success: true});
   }
 });
 
-// Function to toggle mute
-function toggleMute() {
-  // Try to find the mute button using common selectors
-  const muteSelectors = [
-    '[data-tooltip*="microphone"]',
-    '[aria-label*="microphone"]',
-    '[aria-label*="Mute"]',
-    '[aria-label*="Unmute"]',
-    'button[data-is-muted]'
-  ];
+function showCaptions() {
+  // Remove existing caption if any
+  hideCaptions();
   
-  for (const selector of muteSelectors) {
-    const muteButton = document.querySelector(selector);
-    if (muteButton) {
-      muteButton.click();
-      console.log('Mute button clicked');
-      return;
-    }
-  }
+  // Create the caption element
+  captionElement = document.createElement('div');
+  captionElement.id = 'meet-extension-caption';
+  captionElement.textContent = 'hi this is a sample text';
   
-  // Fallback: try keyboard shortcut
-  document.dispatchEvent(new KeyboardEvent('keydown', {
-    key: 'd',
-    ctrlKey: true,
-    bubbles: true
-  }));
-  
-  console.log('Attempted to toggle mute');
-}
-
-// Function to toggle video
-function toggleVideo() {
-  // Try to find the video button using common selectors
-  const videoSelectors = [
-    '[data-tooltip*="camera"]',
-    '[aria-label*="camera"]',
-    '[aria-label*="Turn on camera"]',
-    '[aria-label*="Turn off camera"]'
-  ];
-  
-  for (const selector of videoSelectors) {
-    const videoButton = document.querySelector(selector);
-    if (videoButton) {
-      videoButton.click();
-      console.log('Video button clicked');
-      return;
-    }
-  }
-  
-  // Fallback: try keyboard shortcut
-  document.dispatchEvent(new KeyboardEvent('keydown', {
-    key: 'e',
-    ctrlKey: true,
-    bubbles: true
-  }));
-  
-  console.log('Attempted to toggle video');
-}
-
-// Function to show meeting info
-function showMeetingInfo() {
-  // Get meeting URL
-  const meetingUrl = window.location.href;
-  
-  // Try to get meeting title or ID from the URL
-  const meetingId = meetingUrl.match(/meet\.google\.com\/([a-z-]+)/)?.[1] || 'Unknown';
-  
-  // Get participant count (this might need adjustment based on current Meet UI)
-  const participantElements = document.querySelectorAll('[data-participant-id]');
-  const participantCount = participantElements.length || 'Unknown';
-  
-  // Show info in a simple alert (you could make this more sophisticated)
-  const info = `Meeting Info:\nID: ${meetingId}\nParticipants: ${participantCount}\nURL: ${meetingUrl}`;
-  
-  // Create a temporary notification div
-  const notification = document.createElement('div');
-  notification.style.cssText = `
+  // Style the caption
+  captionElement.style.cssText = `
     position: fixed;
-    top: 20px;
-    right: 20px;
-    background: #333;
+    bottom: 120px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
     color: white;
-    padding: 15px;
-    border-radius: 5px;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Google Sans', Roboto, Arial, sans-serif;
+    font-size: 16px;
+    font-weight: 500;
     z-index: 10000;
-    font-family: Arial, sans-serif;
-    font-size: 14px;
-    max-width: 300px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    max-width: 80%;
+    text-align: center;
+    animation: fadeIn 0.3s ease-in-out;
   `;
-  notification.textContent = info;
   
-  document.body.appendChild(notification);
-  
-  // Remove notification after 5 seconds
-  setTimeout(() => {
-    if (notification.parentNode) {
-      notification.parentNode.removeChild(notification);
+  // Add fade-in animation
+  const style = document.createElement('style');
+  style.textContent = `
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateX(-50%) translateY(10px); }
+      to { opacity: 1; transform: translateX(-50%) translateY(0); }
     }
-  }, 5000);
+  `;
+  document.head.appendChild(style);
   
-  console.log('Meeting info displayed');
+  // Add to the page
+  document.body.appendChild(captionElement);
+  
+  console.log('Captions shown');
+}
+
+function hideCaptions() {
+  if (captionElement && captionElement.parentNode) {
+    captionElement.parentNode.removeChild(captionElement);
+    captionElement = null;
+    console.log('Captions hidden');
+  }
+}
+
+// Try to find meeting controls and position caption accordingly
+function adjustCaptionPosition() {
+  if (!captionElement) return;
+  
+  // Try to find the meeting controls bar
+  const controlsSelectors = [
+    '[data-meeting-controls]',
+    '[role="toolbar"]',
+    '.VfPpkd-Bz112c-LgbsSe',
+    '[jsname="A5il2e"]'
+  ];
+  
+  let controlsBar = null;
+  for (const selector of controlsSelectors) {
+    controlsBar = document.querySelector(selector);
+    if (controlsBar) break;
+  }
+  
+  if (controlsBar) {
+    const rect = controlsBar.getBoundingClientRect();
+    const newBottom = window.innerHeight - rect.top + 20; // 20px above controls
+    captionElement.style.bottom = newBottom + 'px';
+    console.log('Caption position adjusted based on controls');
+  }
+}
+
+// Observe DOM changes to adjust position when controls move
+const observer = new MutationObserver(function(mutations) {
+  if (captionElement) {
+    adjustCaptionPosition();
+  }
+});
+
+// Start observing when the page loads
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function() {
+    observer.observe(document.body, { childList: true, subtree: true });
+  });
+} else {
+  observer.observe(document.body, { childList: true, subtree: true });
 }
