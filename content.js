@@ -23,50 +23,72 @@ function showCaptions() {
   captionElement.id = 'meet-extension-caption';
   captionElement.textContent = 'hi this is a sample text';
   
-  // Style the caption with VERY simple fixed positioning
+  // Style the caption like YouTube captions
   captionElement.style.cssText = `
     position: fixed !important;
-    bottom: 100px !important;
+    bottom: 120px !important;
     left: 50% !important;
     transform: translateX(-50%) !important;
-    background: red !important;
+    background: rgba(0, 0, 0, 0.8) !important;
     color: white !important;
-    padding: 20px 30px !important;
-    border-radius: 8px !important;
-    font-family: Arial, sans-serif !important;
-    font-size: 24px !important;
-    font-weight: bold !important;
-    z-index: 999999 !important;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.8) !important;
-    border: 5px solid yellow !important;
+    padding: 8px 12px !important;
+    font-family: "YouTube Noto", Roboto, "Arial Unicode MS", Arial, Helvetica, Verdana, "PT Sans Caption", sans-serif !important;
+    font-size: 18px !important;
+    font-weight: 400 !important;
+    line-height: 1.3 !important;
     text-align: center !important;
+    border-radius: 0px !important;
+    border: none !important;
+    box-shadow: 0 0 2px rgba(0, 0, 0, 0.5) !important;
+    z-index: 999999 !important;
     display: block !important;
     visibility: visible !important;
     opacity: 1 !important;
     pointer-events: none !important;
-    width: 300px !important;
-    height: 60px !important;
-    line-height: 60px !important;
+    max-width: 80% !important;
+    word-wrap: break-word !important;
+    text-shadow: 
+      1px 1px 0 #000,
+      -1px -1px 0 #000,
+      1px -1px 0 #000,
+      -1px 1px 0 #000,
+      0 1px 0 #000,
+      1px 0 0 #000,
+      0 -1px 0 #000,
+      -1px 0 0 #000 !important;
+    letter-spacing: 0px !important;
+    white-space: nowrap !important;
   `;
   
   // Add to the page
   document.body.appendChild(captionElement);
   
   // Log element details for debugging
-  console.log('Captions shown');
+  console.log('YouTube-style captions shown');
   console.log('Caption element:', captionElement);
   console.log('Element position:', captionElement.getBoundingClientRect());
-  console.log('Window height:', window.innerHeight);
-  console.log('Window width:', window.innerWidth);
   
-  // Force visibility check
-  setTimeout(() => {
-    const rect = captionElement.getBoundingClientRect();
-    console.log('Caption final position after timeout:', rect);
-    if (rect.top < 0 || rect.bottom > window.innerHeight || rect.left < 0 || rect.right > window.innerWidth) {
-      console.warn('Caption might be positioned outside viewport!');
-    }
-  }, 200);
+  // Add some animation for smooth appearance
+  captionElement.style.animation = 'captionFadeIn 0.3s ease-out';
+  
+  // Add the animation keyframes
+  if (!document.getElementById('caption-styles')) {
+    const style = document.createElement('style');
+    style.id = 'caption-styles';
+    style.textContent = `
+      @keyframes captionFadeIn {
+        from {
+          opacity: 0;
+          transform: translateX(-50%) translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(-50%) translateY(0);
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  }
 }
 
 function hideCaptions() {
